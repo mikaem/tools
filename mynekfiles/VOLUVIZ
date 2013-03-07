@@ -1,0 +1,9 @@
+C     Dimensions of voluviz box
+      parameter (nx=50, ny=50, nz=100)
+      parameter (dxl=1., dyl=1., dzl=4.)
+      parameter (dx0=-0.5, dy0=-0.5, dz0=-2.)
+      parameter (numproc=4)
+      character(len=100) vars /'U,V,W,P,Lambda2'/
+      character(len=7) volfolder /'voluviz'/
+      character(len=9) filename /'stenper'/
+      

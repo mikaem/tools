@@ -1,0 +1,15 @@
+To get started:
+
+Unix> ipython
+
+...
+[1]: from mshconvert import *
+[2]: convert('sirkel4.msh', curves={7:{'type':'C', 'radius':1, 'depth': 4, 'circle_center': (0, 0)}})
+
+This will create the rea-file (sirkel.rea) that can be read by nek5000. 
+
+Note that this geometry is a circle and thus it has one circular boundary, number 7. The radius is 1. I choose to tranplant the curvature four elements into the geometry, hence 'depth': 4. This is completely necessary to create a decent boundary layer. 'circle_center': (0, 0) gives the location of the center of the circle that makes up the boundary. This is used to compute the radii of the inner facets.
+
+Hope it works for you as well!
+
+Mikael
