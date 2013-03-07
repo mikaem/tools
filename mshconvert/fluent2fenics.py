@@ -47,12 +47,9 @@ zones = {}                  # zone information
 zone_number_of_faces = {}   # number of faces for each zone
 
 def read_periodic(ifile, periodic_dx):
-    """Scan periodic section and create periodic_face_map.
-    However, if a dictionary periodic_dx has been supplied then simply skip
-    past this section without creating the periodic_face_map."""
+    """Scan past periodic section"""
     while 1:
         line = ifile.readline()
-
         a = re.search(re_pfaces, line)
         if a:
             continue
@@ -74,8 +71,7 @@ def read_zone_nodes(dim, Nmin, Nmax, ifile):
         nodes[:, i - Nmin] = [eval(x) for x in line.split()]
     
 def read_faces(zone_id, Nmin, Nmax, bc_type, face, ifile):
-    """Read all faces and create cell_face_map + some boundary maps."""
-    
+    """Read all faces and create cell_face_map + some boundary maps."""    
     line = ifile.readline()
     readline = False
     if re.search(re_parant, line): # check for initial paranthesis
@@ -198,7 +194,7 @@ def scan_fluent_mesh(ifile):
             read_periodic(ifile, periodic_dx)
             continue
         
-        print 'Line = ',line
+        #print 'Line = ',line
         if any([re.search(st, line) for st in (re_parant, re_comment)]) or \
                                                              not line.strip():
             continue
@@ -254,26 +250,10 @@ def write_fenics_file(dim, ofilename):
 def convert(fluentmesh):
     """Converts a fluent mesh to a mesh format that can be used by FEniCS. 
          
-         fluentmesh = fluent mesh (*.msh file)
-         
-                bcs = False or dictionary of boundary conditions for 
-                      velocity/pressure (something like {1: 'W', 2: 'v'} for
-                      wall in zone 1 and Dirchlet to be specified in zone 2).
-                      False indicates that dictionary is not used and
-                      in that case we assume the name of the zone ends in
-                      the correct letter, like 'somename_W' for zone 1 and 
-                      'somename_v' for zone 2. Zonenames are easy to modify
-                      at the bottom of the fluent msh files.
-                      Don't include periodic zones here.
+         fluentmesh = fluent mesh (*.msh file)         
     """
     ofilename = fluentmesh[:-4]
     ifile  = open(fluentmesh, "r")
-
-    if not nodes:
-        # Read all lines of fluent mesh
-        scan_fluent_mesh(ifile)
-
-    dim = nodes.shape[0]
-    write_fenics_file(dim, ofilename)
-
+    scan_fluent_mesh(ifile)
+    write_fenics_file(nodes.shape[0], ofilename)
     ifile.close()
