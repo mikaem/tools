@@ -209,8 +209,7 @@ def write_fenics_file(dim, ofilename):
     editor = MeshEditor()
     editor.open(mesh, dim, dim)
     editor.init_vertices(nodes.shape[1])
-    editor.init_cells(len(cell_map))
-    
+    editor.init_cells(len(cell_map))    
     for i in range(nodes.shape[1]):
         if dim == 2:
             editor.add_vertex(i, nodes[0, i], nodes[1, i])
