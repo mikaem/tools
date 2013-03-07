@@ -203,7 +203,6 @@ def scan_fluent_mesh(ifile):
         print 'Line = ',line
         raise IOError('Something went wrong reading fluent mesh.')
     
-
 def write_fenics_file(dim, ofilename):
     ofile  = File(ofilename + '.xml')
     mesh = Mesh()
