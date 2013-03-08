@@ -249,6 +249,7 @@ def convert(fluentmesh):
     """Converts a fluent mesh to a mesh format that can be used by FEniCS. 
          
          fluentmesh = fluent mesh (*.msh file)         
+         
     """
     ofilename = fluentmesh[:-4]
     ifile  = open(fluentmesh, "r")
