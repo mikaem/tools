@@ -6,7 +6,7 @@ from numpy import zeros, array
 from dolfin import File, MeshEditor, Mesh, Cell, facets
 
 def fluent2xml(ifilename, ofilename):
-    """Converting from ANSYS Fluent format (.msh) to FEniCS format
+    """Converting from ANSYS Fluent format (.msh) to FEniCS xml format
     The fluent mesh (the .msh file) is basically stored as a list of vertices, and then a 
     list of faces for each zone of the mesh, the interior and the boundaries."""    
     
@@ -27,13 +27,8 @@ def fluent2xml(ifilename, ofilename):
 
     # Declare som maps that will be built when reading in the lists of vertices and faces:
     cell_map = {}               # Maps cell id with vertices
-    face_cell_map = {}          # Maps face id with two cells
-
-    # Information about connectivity and boundaries
     boundary_cells = {}         # List of cells attached to a boundary facet. Key is zone id
-
-    # Some global values
-    zones = {}                  # zone information
+    zones = {}                  # zone information (not really used yet)
 
     def read_periodic(ifile, periodic_dx):
         """Scan past periodic section. Periodicity is computed by FEniCS."""
@@ -45,15 +40,16 @@ def fluent2xml(ifilename, ofilename):
             break
 
     def read_zone_vertices(dim, Nmin, Nmax, ifile, editor):
-        """Scan lines for vertices and return in an array."""
+        """Scan ifile for vertices and add to mesh_editor."""
+        # First line could be either just "(" or a regular vertex.
+        # Check for initial paranthesis. If paranthesis then read a new line, else reset
+        pos = ifile.tell()
         line = ifile.readline()
-        readline = False
-        if re.search(re_parthesis, line): # check for initial paranthesis
-            readline = True
+        if not re.search(re_parthesis, line): 
+            ifile.seek(pos) # reset            
+        # read Nmax-Nmin vertices
         for i in range(Nmin, Nmax + 1):
-            if readline:
-                line = ifile.readline()
-            readline = True
+            line = ifile.readline()
             vertex = [eval(x) for x in line.split()]
             if dim == 2:
                 editor.add_vertex(i - Nmin, vertex[0], vertex[1])
@@ -61,18 +57,15 @@ def fluent2xml(ifilename, ofilename):
                 editor.add_vertex(i - Nmin, vertex[0], vertex[1], vertex[2])
         
     def read_faces(zone_id, Nmin, Nmax, bc_type, face, ifile):
-        """Read all faces and create cell_map + boundary maps."""
-        
+        """Read all faces and create cell_map + boundary maps."""        
+        pos = ifile.tell() # current position
         line = ifile.readline()
-        readline = False
-        if re.search(re_parthesis, line): # check for initial paranthesis
-            readline = True
-
-        ls = []
+        if not re.search(re_parthesis, line): # check for initial paranthesis. If paranthesis then read a new line, else reset
+            ifile.seek(pos)
+            
+        # read Nmax-Nmin faces
         for i in range(Nmin, Nmax + 1):
-            if readline:
-                line = ifile.readline()
-            readline = True
+            line = ifile.readline()
             ln = line.split()
             if face == 0:
                 nd = int(ln[0], 16) # Number of vertices
@@ -125,16 +118,15 @@ def fluent2xml(ifilename, ofilename):
                 
             a = re.search(re_zone, line) # Vertices
             if a:
-                zone_id, first_id, last_id, dummy1, dummy2 = int(a.group(1), 16), \
-                    int(a.group(2), 16), int(a.group(3), 16), int(a.group(4)), \
-                    int(a.group(5))
+                zone_id, first_id, last_id = int(a.group(1), 16), \
+                    int(a.group(2), 16), int(a.group(3), 16)
                 print 'Reading ', last_id - first_id + 1,' vertices in zone ', zone_id + 1, '\n'
                 read_zone_vertices(dim, first_id, last_id, ifile, editor)
                 continue
                 
             a = re.search(re_zones,line) # Zone info
             if a:
-                print 'Reading zone ', line
+                print 'Reading zone info ', line
                 dummy, zone_id, zone_type, zone_name, radius =  \
                         int(a.group(1)), int(a.group(2)),  a.group(3), \
                         a.group(4), a.group(5)
@@ -153,7 +145,7 @@ def fluent2xml(ifilename, ofilename):
                 zone_id, first_id, last_id, bc_type, element_type = \
                     int(a.group(1)), int(a.group(2), 16), int(a.group(3), 16), \
                     int(a.group(4), 16), int(a.group(5), 16)
-                print 'Reading ', last_id - first_id + 1,' cells in zone ', zone_id, '\n'
+                print 'Found ', last_id - first_id + 1,' cells in zone ', zone_id, '\n'
                 if last_id == 0:
                     raise TypeError("Zero elements!")
                 continue
@@ -178,7 +170,7 @@ def fluent2xml(ifilename, ofilename):
             
             a = re.search(re_periodic, line)
             if a:
-                print 'Reading periodic connectivity\n', line
+                print 'Scanning past periodic connectivity\n', line
                 read_periodic(ifile, periodic_dx)
                 continue
             
@@ -199,6 +191,7 @@ def fluent2xml(ifilename, ofilename):
                 editor.add_cell(i-1, cell_map[i][0]-1, cell_map[i][1]-1, cell_map[i][2]-1, cell_map[i][3]-1)
         
         mesh.order()
+        # Set MeshValueCollections from info in  boundary_cell
         mvc = mesh.domains().markers(dim-1)
         for zone, cells in boundary_cells.iteritems():
             for cell, nds in cells.iteritems():
@@ -217,8 +210,8 @@ def fluent2xml(ifilename, ofilename):
         plot(mesh, interactive=True)
         print 'Finished writing FEniCS mesh\n'
 
-    ifile  = open(ifilename, "r")    
-    ofile  = File(ofilename+'.gz')
+    ifile  = open(ifilename, "r")   
+    ofile  = File(ofilename)
     mesh = Mesh()
     editor = MeshEditor()
     scan_fluent_mesh(ifile, mesh, editor)
