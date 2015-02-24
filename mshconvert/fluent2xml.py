@@ -192,7 +192,8 @@ def fluent2xml(ifilename, ofilename):
         
         mesh.order()
         # Set MeshValueCollections from info in  boundary_cell
-        mvc = mesh.domains().markers(dim-1)
+        #mvc = mesh.domains().markers(dim-1)
+        md = mesh.domains()
         for zone, cells in boundary_cells.iteritems():
             for cell, nds in cells.iteritems():
                 dolfin_cell = Cell(mesh, cell-1)
@@ -203,8 +204,9 @@ def fluent2xml(ifilename, ofilename):
                     if all(map(lambda x: x in vertices_of_face, facet_vertices)):
                         local_index = jj
                         break
-                mvc.set_value(cell-1, local_index, zone)
-            
+                #mvc.set_value(cell-1, local_index, zone)
+                md.set_marker((ff.index(), zone), dim-1)
+                
         ofile << mesh        
         from dolfin import plot
         plot(mesh, interactive=True)
